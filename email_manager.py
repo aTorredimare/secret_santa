@@ -6,6 +6,7 @@ import smtplib
 import time
 import logging
 import getpass
+from datetime import datetime
 from typing import Dict, Tuple, Optional
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -88,15 +89,13 @@ class EmailManager:
         msg['Subject'] = "🎅 Secret Santa 2025 🎁"
         
         body = f"""Ciao {giver_name},
-
-Il tuo destinatario per il Secret Santa di quest'anno è: {receiver_name}
-
-🎁 Ricordati di mantenere il segreto!
-🎄 Buone feste!
-
----
-Questo è un messaggio automatico del sistema Secret Santa.
-"""
+    Il tuo destinatario per il Secret Santa di quest'anno è: {receiver_name}
+    🎁 Ricordati di mantenere il segreto!
+    🎄 Buone feste!
+        
+    ---
+    Questo è un messaggio automatico del sistema Secret Santa.
+    """
         msg.attach(MIMEText(body, 'plain', 'utf-8'))
         return msg
     
@@ -210,18 +209,18 @@ Questo è un messaggio automatico del sistema Secret Santa.
         
         for giver, receiver in extracted.items():
             email_body = f"""Ciao {giver}!
-
-È arrivato il momento del nostro Secret Santa! 🎁
-
-Quest'anno dovrai fare un regalo a: **{receiver}**
-
-Ricorda di mantenere il segreto fino al giorno dello scambio!
-
-Buon divertimento! 🎄"""
+    È arrivato il momento del nostro Secret Santa! 🎁
+            
+    Quest'anno dovrai fare un regalo a: **{receiver}**
+            
+    Ricorda di mantenere il segreto fino al giorno dello scambio!
+    Buon divertimento! 🎄
+    """
             
             logger.info(f"📧 Invio email a {giver} ({participants[giver]['email']})...")
             
-            if self.send_single_email_legacy(participants[giver]["email"], "🎅 Secret Santa 2024", email_body):
+            current_year = datetime.now().year
+            if self.send_single_email_legacy(participants[giver]["email"], f"🎅 Secret Santa {current_year}", email_body):
                 successful_sends += 1
                 if silent_mode:
                     logger.info(f"✅ Email inviata con successo a {giver}")

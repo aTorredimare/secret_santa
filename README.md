@@ -77,7 +77,7 @@ Il programma ti guiderà attraverso:
 Ogni partecipante riceve un'email con il seguente template:
 
 ```
-Oggetto: 🎅 Secret Santa 2024
+Oggetto: 🎅 Secret Santa [Anno Corrente]
 
 Ciao [Nome]!
 
