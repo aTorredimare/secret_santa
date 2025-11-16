@@ -6,6 +6,7 @@ import smtplib
 import time
 import logging
 import getpass
+import textwrap
 from datetime import datetime
 from typing import Dict, Tuple, Optional
 from email.mime.text import MIMEText
@@ -88,14 +89,14 @@ class EmailManager:
         msg['To'] = receiver_email
         msg['Subject'] = "🎅 Secret Santa 2025 🎁"
         
-        body = f"""Ciao {giver_name},
-    Il tuo destinatario per il Secret Santa di quest'anno è: {receiver_name}
-    🎁 Ricordati di mantenere il segreto!
-    🎄 Buone feste!
-        
-    ---
-    Questo è un messaggio automatico del sistema Secret Santa.
-    """
+        body = textwrap.dedent(f"""
+            Ciao {giver_name},
+            
+            Il tuo destinatario per il Secret Santa di quest'anno è: {receiver_name}
+            
+            🎁 Ricordati di mantenere il segreto!
+            🎄 Buone feste!
+            """).strip()
         msg.attach(MIMEText(body, 'plain', 'utf-8'))
         return msg
     
@@ -208,14 +209,15 @@ class EmailManager:
         logger.info(f"📤 Inizio invio di {len(extracted)} email...")
         
         for giver, receiver in extracted.items():
-            email_body = f"""Ciao {giver}!
-    È arrivato il momento del nostro Secret Santa! 🎁
-            
-    Quest'anno dovrai fare un regalo a: **{receiver}**
-            
-    Ricorda di mantenere il segreto fino al giorno dello scambio!
-    Buon divertimento! 🎄
-    """
+            email_body = textwrap.dedent(f"""
+                Ciao {giver}!
+                
+                È arrivato il momento del nostro Secret Santa! 🎁
+                Quest'anno dovrai fare un regalo a: **{receiver}**
+                
+                Ricorda di mantenere il segreto fino al giorno dello scambio!
+                Buon divertimento! 🎄
+                """).strip()
             
             logger.info(f"📧 Invio email a {giver} ({participants[giver]['email']})...")
             
