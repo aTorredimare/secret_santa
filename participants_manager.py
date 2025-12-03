@@ -7,8 +7,10 @@ import logging
 from typing import Dict, Any, Optional, Set
 from dataclasses import dataclass
 import re
+from datetime import datetime
 
 from exceptions import ParticipantsLoadError, ValidationError
+from database_manager import DatabaseManager, ParticipantRecord
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +42,10 @@ class Participant:
 class ParticipantsManager:
     """Classe per gestire il caricamento e validazione dei partecipanti."""
     
+    def __init__(self, db_path: str = "secret_santa.db"):
+        """Inizializza il manager con database opzionale."""
+        self.db_manager = DatabaseManager(db_path)
+    
     @classmethod
     def load_from_file(cls, file_path: str = "participants.json") -> Dict[str, Participant]:
         """
@@ -67,7 +73,7 @@ class ParticipantsManager:
                     logger.error(f"Errore validazione per {name}: {e}")
                     raise ParticipantsLoadError(f"Dati non validi per {name}") from e
             
-            cls._validate_constraints(participants)
+            ParticipantsManager._validate_constraints(participants)
             logger.info(f"Caricati {len(participants)} partecipanti da {file_path}")
             return participants
             
@@ -119,6 +125,98 @@ class ParticipantsManager:
         duplicates = set([email for email in emails if emails.count(email) > 1])
         if duplicates:
             raise ValidationError(f"Email duplicate trovate: {duplicates}")
+    
+    def load_from_database(self) -> Dict[str, Participant]:
+        """
+        Carica i partecipanti dal database.
+            
+        Returns:
+            Dict[str, Participant]: Dizionario dei partecipanti
+        """
+        try:
+            participant_records = self.db_manager.get_participants()
+            
+            participants = {}
+            for record in participant_records:
+                # Recupera last_year dal database
+                previous_receivers = self.db_manager.get_previous_receivers(record.name, 1)
+                last_year = previous_receivers[0] if previous_receivers else ""
+                
+                participant = Participant(
+                    name=record.name,
+                    email=record.email,
+                    last_year=last_year
+                )
+                participants[record.name] = participant
+            
+            self._validate_constraints(participants)
+            logger.info(f"Caricati {len(participants)} partecipanti dal database")
+            return participants
+            
+        except Exception as e:
+            raise ParticipantsLoadError(f"Errore nel caricamento dal database: {e}") from e
+    
+    def save_to_database(self, participants: Dict[str, Participant]) -> bool:
+        """
+        Salva i partecipanti nel database.
+        
+        Args:
+            participants: Dizionario dei partecipanti
+            
+        Returns:
+            True se salvato con successo
+        """
+        try:
+            for participant in participants.values():
+                self.db_manager.add_participant(participant.name, participant.email)
+            
+            logger.info(f"Salvati {len(participants)} partecipanti nel database")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Errore nel salvataggio nel database: {e}")
+            return False
+    
+    def migrate_json_to_database(self, json_file: str = "participants.json", year: int = None) -> bool:
+        """
+        Migra i dati da JSON al database.
+        
+        Args:
+            json_file: File JSON sorgente
+            year: Anno da usare per l'estrazione precedente (default: anno corrente)
+            
+        Returns:
+            True se migrazione riuscita
+        """
+        return self.db_manager.migrate_from_json(json_file, year)
+    
+    @classmethod  
+    def load_from_database_legacy(cls, db_path: str = "secret_santa.db") -> Optional[Dict[str, Dict[str, Any]]]:
+        """
+        Versione legacy per compatibilità - carica dal database e converte in dizionari.
+        
+        Args:
+            db_path: Percorso del database
+            
+        Returns:
+            Dizionario in formato legacy o None se errore
+        """
+        try:
+            manager = cls(db_path)
+            participants = manager.load_from_database()
+            
+            # Converte da Participant a dict per compatibilità
+            return {
+                name: {
+                    'email': p.email,
+                    'last_year': p.last_year,
+                    'is_already_extracted': p.is_already_extracted
+                }
+                for name, p in participants.items()
+            }
+        except Exception as e:
+            logger.error(f"Errore nel caricamento legacy dal database: {e}")
+            return None
     
     @staticmethod
     def validate_email(email: str) -> bool:

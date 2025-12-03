@@ -84,10 +84,11 @@ class EmailManager:
     
     def _create_email_message(self, receiver_email: str, giver_name: str, receiver_name: str) -> MIMEMultipart:
         """Crea un messaggio email strutturato."""
+        current_year = datetime.now().year
         msg = MIMEMultipart()
         msg['From'] = self.sender_email
         msg['To'] = receiver_email
-        msg['Subject'] = "🎅 Secret Santa 2025 🎁"
+        msg['Subject'] = f"🎅 Secret Santa {current_year} 🎁 - REAL"
         
         body = textwrap.dedent(f"""
             Ciao {giver_name},
@@ -222,7 +223,7 @@ class EmailManager:
             logger.info(f"📧 Invio email a {giver} ({participants[giver]['email']})...")
             
             current_year = datetime.now().year
-            if self.send_single_email_legacy(participants[giver]["email"], f"🎅 Secret Santa {current_year}", email_body):
+            if self.send_single_email_legacy(participants[giver]["email"], f"🎅 Secret Santa {current_year} 🎁 - REAL", email_body):
                 successful_sends += 1
                 if silent_mode:
                     logger.info(f"✅ Email inviata con successo a {giver}")

@@ -1,179 +1,183 @@
-# Secret Santa Organizer 🎅
+# 🎅 Secret Santa Organizer
 
-Organizzatore automatico per Secret Santa che gestisce partecipanti, estrazione degli abbinamenti e invio email di notifica.
+Un sistema automatico per organizzare il Secret Santa con gestione completa dei partecipanti, estrazioni intelligenti e invio email automatico.
 
-## 📋 Funzionalità
+## 🎯 Caratteristiche Principali
 
-- **Gestione partecipanti**: Caricamento automatico da file JSON con validazione email
-- **Algoritmo di estrazione**: Evita automaticamente abbinamenti dell'anno precedente
-- **Invio email**: Notifiche automatiche personalizzate via SMTP
-- **Modalità test**: Simulazione completa senza invio reale
-- **Modalità silenziosa**: Mantiene il segreto nascondendo gli abbinamenti
-- **Logging completo**: Tracciamento dettagliato di tutte le operazioni
-- **Gestione errori**: Sistema robusto di error handling
+- **📊 Database SQLite**: Gestione persistente di partecipanti e storico estrazioni
+- **🧠 Algoritmo Anti-Ripetizioni**: Evita automaticamente abbinamenti degli anni precedenti
+- **📧 Invio Email Automatico**: Notifiche personalizzate via SMTP
+- **🔄 Migrazione Automatica**: Converte dati JSON esistenti al database
+- **🤫 Modalità Silenziosa**: Mantiene il segreto nascondendo gli abbinamenti
+- **🧪 Modalità Test**: Simulazione completa senza invio reale
 
-## 🛠 Installazione
+## 🚀 Installazione Rapida
 
 ### Prerequisiti
 - Python 3.7+
-- Accesso email SMTP (es. Gmail)
+- Account email con accesso SMTP (Gmail consigliato)
 
 ### Setup
 ```bash
-git clone <repository-url>
+git clone https://github.com/aTorredimare/secret_santa.git
 cd secret_santa
 ```
 
-Non sono necessarie dipendenze esterne - il progetto usa solo librerie standard Python.
+Non servono dipendenze esterne - tutto usa librerie standard Python!
 
 ## ⚙️ Configurazione
 
-### 1. Partecipanti
-Modifica `participants.json`:
-
-```json
-{
-    "Nome1": {
-        "email": "email1@esempio.it",
-        "last_year": "Nome2"
-    },
-    "Nome2": {
-        "email": "email2@esempio.it",
-        "last_year": ""
-    }
-}
-```
-
-- `email`: Indirizzo email del partecipante (obbligatorio)
-- `last_year`: Chi ha ricevuto l'anno scorso (opzionale, per evitare ripetizioni)
-
-### 2. Credenziali Email
-Crea file `.env`:
+### 1. Credenziali Email
+Crea il file `.env` nella root del progetto:
 
 ```
 SECRET_SANTA_EMAIL=tuaemail@gmail.com
 SECRET_SANTA_PASSWORD=password_app_gmail
 ```
 
-**Nota per Gmail**: Usa una [Password per App](https://support.google.com/accounts/answer/185833), non la password normale.
+> **💡 Per Gmail**: Usa una [Password per App](https://support.google.com/accounts/answer/185833), non la password normale del tuo account.
 
-## 🚀 Utilizzo
+### 2. Partecipanti
+Se è la prima volta, crea `participants.json`:
 
-Esegui il programma:
+```json
+{
+    "Andrea": {
+        "email": "andrea@esempio.it",
+        "last_year": ""
+    },
+    "Marco": {
+        "email": "marco@esempio.it", 
+        "last_year": "Andrea"
+    },
+    "Lucia": {
+        "email": "lucia@esempio.it",
+        "last_year": "Marco" 
+    }
+}
+```
+
+- **`email`**: Indirizzo email del partecipante (obbligatorio)
+- **`last_year`**: Chi ha ricevuto l'anno scorso (opzionale, per evitare ripetizioni)
+
+> Il sistema migrerà automaticamente i dati JSON al database SQLite al primo avvio.
+
+## 🎮 Utilizzo
+
+### Avvio Principale
 ```bash
-python estrazioni.py
+python3 estrazioni.py
 ```
 
 Il programma ti guiderà attraverso:
-1. **Caricamento partecipanti** - Lettura e validazione da `participants.json`
-2. **Modalità silenziosa** - Scelta se nascondere gli abbinamenti
-3. **Estrazione** - Generazione automatica degli abbinamenti
-4. **Anteprima** - Visualizzazione risultati (se non silenziosa)
-5. **Modalità test/produzione** - Scelta tra simulazione o invio reale
-6. **Invio email** - Notifica ai partecipanti
 
-## 📧 Email Template
+1. **📋 Caricamento Automatico**: Legge dal database o migra da JSON
+2. **🤫 Modalità Silenziosa**: Scegli se nascondere gli abbinamenti
+3. **🎲 Estrazione Intelligente**: Genera abbinamenti evitando ripetizioni
+4. **👀 Anteprima**: Visualizza risultati (se non in modalità silenziosa)
+5. **🧪 Test o Invio**: Scegli tra simulazione o invio reale
 
-Ogni partecipante riceve un'email con il seguente template:
-
+### Esempio di Esecuzione
 ```
-Oggetto: 🎅 Secret Santa [Anno Corrente]
+🎅 Secret Santa Organizer 2025 🎁
+📊 Modalità Database SQLite attivata
 
+📋 Caricamento partecipanti...
+✅ Caricati 6 partecipanti dal database
+
+Modalità silenziosa? (s/n, default=s): s
+🎲 Creazione abbinamenti...
+✅ Abbinamenti creati con successo
+🤫 Modalità silenziosa: 6 abbinamenti creati
+
+Modalità test? (non invia email) (s/n, default=s): n
+📤 Inizio invio di 6 email...
+✅ Email inviata a Andrea...
+✅ Email inviata a Marco...
+🎉 Tutte le email inviate con successo!
+```
+
+## 🗄️ Gestione Database
+
+Il sistema usa SQLite per memorizzare tutto automaticamente. Comandi utili:
+
+### Esportare Partecipanti
+```bash
+# Esporta partecipanti in formato JSON compatibile
+python3 migrate_to_database.py --export participants_backup.json
+```
+
+### Esportare Estrazioni
+```bash
+# Estrazioni dell'anno corrente
+python3 migrate_to_database.py --export-extractions extractions_2025.json
+
+# Estrazioni di un anno specifico
+python3 migrate_to_database.py --export-extractions extractions_2024.json --year 2024
+```
+
+### Migrazione Manuale
+```bash
+# Migra dati da JSON esistente
+python3 migrate_to_database.py --json-file participants.json
+
+# Migra con anno specifico per lo storico
+python3 migrate_to_database.py --year 2024
+```
+
+## 📧 Template Email
+
+Ogni partecipante riceve automaticamente:
+
+**Oggetto**: 🎅 Secret Santa 2025 🎁
+
+**Corpo**:
+```
 Ciao [Nome]!
 
-È arrivato il momento del nostro Secret Santa! 🎁
+Il tuo destinatario per il Secret Santa di quest'anno è: [Destinatario]
 
-Quest'anno dovrai fare un regalo a: **[Nome Destinatario]**
-
-Ricorda di mantenere il segreto fino al giorno dello scambio!
-
-Buon divertimento! 🎄
+🎁 Ricordati di mantenere il segreto!
+🎄 Buone feste!
 ```
 
-## 🏗 Struttura Progetto
+> L'anno nell'oggetto si aggiorna automaticamente ogni anno.
+
+## 🏗️ Struttura Progetto
 
 ```
 secret_santa/
-├── estrazioni.py              # Entry point principale
-├── participants_manager.py    # Gestione partecipanti
-├── extractions_manager.py     # Algoritmo estrazione
-├── email_manager.py          # Invio email SMTP
-├── config.py                 # Configurazioni
-├── exceptions.py             # Eccezioni custom
-├── participants.json         # Database partecipanti
-└── .env                     # Credenziali (non versionare!)
+├── estrazioni.py              # 🚀 Programma principale
+├── database_manager.py        # 🗄️ Gestione database SQLite
+├── participants_manager.py    # 👥 Gestione partecipanti
+├── extractions_manager.py     # 🎲 Algoritmo estrazioni
+├── email_manager.py          # 📧 Invio email SMTP
+├── migrate_to_database.py    # 🔄 Script migrazione e export
+├── config.py                 # ⚙️ Configurazioni
+├── exceptions.py             # 🚨 Eccezioni personalizzate
+├── participants.json         # 📋 Dati legacy (opzionale)
+├── secret_santa.db          # 🗄️ Database SQLite (auto-creato)
+└── .env                     # 🔐 Credenziali (non versionare!)
 ```
 
-## 🔍 Componenti Principali
+## 🎯 Algoritmo Intelligente
 
-### SecretSantaOrganizer
-Coordinatore principale che orchestra l'intero flusso.
+Il sistema è progettato per evitare ripetizioni:
 
-### ParticipantsManager
-- Carica partecipanti da JSON
-- Valida indirizzi email
-- Gestisce errori di formato
+1. **📚 Consultazione Storico**: Controlla estrazioni degli ultimi 2 anni
+2. **🎲 Estrazione Casuale**: Genera abbinamenti rispettando i vincoli
+3. **💾 Salvataggio Automatico**: Memorizza tutto nel database
+4. **📊 Tracciamento**: Mantiene storico completo per anni futuri
 
-### ExtractionsManager
-- Algoritmo di estrazione con retry
-- Evita abbinamenti ripetuti
-- Gestisce casi limite (piccoli gruppi)
-
-### EmailManager
-- Connessione SMTP sicura
-- Invio con retry automatico
-- Template email personalizzati
-
-## 🚨 Gestione Errori
-
-Eccezioni specializzate per ogni tipo di problema:
-
-- `ParticipantsLoadError` - Errori caricamento file
-- `ExtractionError` - Impossibilità di trovare abbinamenti validi
-- `EmailError` - Problemi invio email
-- `ValidationError` - Dati non validi
-
-## 🛡 Sicurezza
-
-- Credenziali caricate da variabili ambiente
-- Validazione rigorosa email con regex
-- Connessioni SMTP sicure
-- File `.env` escluso da version control
-
-## 🧪 Test e Debug
-
-### Modalità Test
-- Simula invio senza spedire email
-- Verifica configurazione
-- Debug flusso completo
-
-### Logging
-Log strutturato con:
-- Timestamp
-- Livello (INFO/WARNING/ERROR)
-- Modulo di origine
-- Messaggio dettagliato
-
-## 💡 Esempi d'Uso
-
-### Primo avvio
-```bash
-python estrazioni.py
-# Scegli modalità silenziosa: Sì
-# Scegli modalità test: Sì (per sicurezza)
+### Esempio Logica Anti-Ripetizione
+```
+2024: Andrea → Marco, Marco → Lucia, Lucia → Andrea
+2025: Andrea ≠ Marco (evitato!), Andrea → Lucia ✅
 ```
 
-### Invio reale
-```bash
-python estrazioni.py
-# Modalità silenziosa: Sì
-# Modalità test: No
-# Conferma invio email
-```
+## 🔧 Configurazione Avanzata
 
-## 🔧 Personalizzazioni
-
-### Configurazione SMTP
+### Personalizzare SMTP
 Modifica `config.py` per provider diversi da Gmail:
 
 ```python
@@ -181,41 +185,118 @@ Modifica `config.py` per provider diversi da Gmail:
 class SMTPConfig:
     server: str = "smtp.tuoprovider.com"
     port: int = 587
-    email_delay: float = 2.0
+    email_delay: float = 2.0  # Pausa tra email
 ```
 
-### Template Email
-Personalizza il messaggio in `email_manager.py`:
+### Personalizzare Algoritmo
+```python
+@dataclass
+class DatabaseConfig:
+    years_history: int = 3  # Anni di storico da considerare
+```
+
+## 🛠️ Risoluzione Problemi
+
+### Email non inviate
+```bash
+# Verifica credenziali
+echo $SECRET_SANTA_EMAIL
+```
+- ✅ Usa Password per App Gmail
+- ✅ Verifica connessione internet
+- ✅ Controlla spam/posta indesiderata
+
+### Estrazione fallisce
+```bash
+# Troppi vincoli? Riduci anni di storico in config.py
+years_history: int = 1
+```
+
+### Database corrotto
+```bash
+# Ricrea da backup JSON
+rm secret_santa.db
+python3 migrate_to_database.py
+```
+
+### Partecipanti senza email
+```
+# Log mostra:
+WARNING - Partecipante [Nome] senza email, saltato
+```
+Aggiungi email valida nel JSON o database.
+
+## 🎄 Esempi d'Uso
+
+### Prima Volta
+```bash
+# 1. Crea participants.json con i tuoi amici
+# 2. Configura .env con le tue credenziali
+# 3. Avvia
+python3 estrazioni.py
+# Scegli: Modalità silenziosa Sì, Test Sì
+```
+
+### Uso Annuale
+```bash
+# Aggiungi nuovi partecipanti se necessario
+python3 estrazioni.py
+# Scegli: Modalità silenziosa Sì, Test No (per invio reale)
+```
+
+### Backup e Archiviazione
+```bash
+# Salva estrazioni dell'anno
+python3 migrate_to_database.py --export-extractions secret_santa_2025.json
+
+# Backup completo
+cp secret_santa.db secret_santa_backup_2025.db
+```
+
+## 🔐 Sicurezza
+
+- ✅ **Credenziali**: Caricate da variabili ambiente
+- ✅ **Validazione**: Email verificate con regex rigoroso
+- ✅ **SMTP Sicuro**: Connessioni cifrate
+- ✅ **Database Locale**: Nessun dato in cloud
+- ✅ **Git Safe**: `.env` escluso dal version control
+
+## 📚 API Sviluppatori
 
 ```python
-def _create_message_body(self, receiver_name: str) -> str:
-    return f"""
-    Il tuo messaggio personalizzato per {receiver_name}
-    """
+from database_manager import DatabaseManager
+from extractions_manager import ExtractionsManager
+
+# Gestione database
+db = DatabaseManager()
+db.add_participant("Nome", "email@esempio.it")
+participants = db.get_participants()
+
+# Estrazione programmatica
+extractor = ExtractionsManager()
+assignments = extractor.extract_with_database(
+    participant_names=["Alice", "Bob", "Charlie"],
+    year=2025,
+    years_back=2
+)
 ```
 
-## ❓ Risoluzione Problemi
+## 🤝 Contribuire
 
-**Estrazione fallisce sempre**
-- Verifica che non ci siano troppi vincoli `last_year`
-- Con meno di 3 partecipanti è difficile evitare ripetizioni
+1. Fork del repository
+2. Crea feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit delle modifiche (`git commit -m 'Add amazing feature'`)
+4. Push al branch (`git push origin feature/amazing-feature`)
+5. Apri una Pull Request
 
-**Email non inviate**
-- Controlla credenziali in `.env`
-- Per Gmail, usa Password per App
-- Verifica connessione internet
+## 📄 Licenza
 
-**Errori di validazione**
-- Controlla formato email in `participants.json`
-- Verifica sintassi JSON
+Questo progetto è open source. Sentiti libero di usarlo e modificarlo per le tue esigenze!
 
-## 📝 Changelog
+## 🎅 Buon Secret Santa!
 
-### v1.0
-- Implementazione base con estrazione e invio email
-- Modalità test e silenziosa
-- Gestione errori completa
-- Logging strutturato
+Divertiti con le tue estrazioni e... ricorda di mantenere il segreto! 🤫🎁
 
 ---
-🎄 **Buon Secret Santa a tutti!** 🎁
+
+*Made with ❤️ for spreading holiday joy*

@@ -5,12 +5,15 @@ Secret Santa Organizer - Programma principale
 
 import logging
 import sys
+import os
 from typing import Dict, Optional
+from datetime import datetime
 
 from config import AppConfig
 from participants_manager import ParticipantsManager, Participant
 from extractions_manager import ExtractionsManager
 from email_manager import EmailManager
+from database_manager import DatabaseManager
 from exceptions import SecretSantaException
 
 logging.basicConfig(
@@ -27,11 +30,15 @@ class SecretSantaOrganizer:
     def __init__(self, config: Optional[AppConfig] = None):
         self.config = config or AppConfig()
         self.participants: Dict[str, Participant] = {}
+        self.participants_manager = ParticipantsManager(self.config.database.db_path) if self.config.use_database else None
+        self.extractions_manager = ExtractionsManager(self.config.database.db_path) if self.config.use_database else None
+        self.db_manager = DatabaseManager(self.config.database.db_path) if self.config.use_database else None
         
     def run(self) -> None:
         """Esegue l'intero processo del Secret Santa."""
         try:
             self._load_participants()
+            
             silent_mode = self._get_user_preference("Modalità silenziosa? (non mostra abbinamenti)", default=True)
             
             assignments = self._create_assignments()
@@ -48,10 +55,44 @@ class SecretSantaOrganizer:
         except KeyboardInterrupt:
             logger.info("\n👋 Operazione annullata dall'utente")
             sys.exit(0)
+        except EOFError:
+            logger.info("\n👋 Input terminato, uscita dal programma")
+            sys.exit(0)
     
     def _load_participants(self) -> None:
-        """Carica i partecipanti dal file."""
+        """Carica i partecipanti dal database o file JSON."""
         logger.info("📋 Caricamento partecipanti...")
+        
+        if self.config.use_database:
+            # Prova a caricare dal database
+            try:
+                self.participants = self.participants_manager.load_from_database()
+                if not self.participants:
+                    # Se il database è vuoto, prova la migrazione automatica
+                    if os.path.exists(self.config.participants_file):
+                        logger.info("Database vuoto, eseguo migrazione automatica da JSON...")
+                        if self.participants_manager.migrate_json_to_database(self.config.participants_file):
+                            self.participants = self.participants_manager.load_from_database()
+                        else:
+                            raise SecretSantaException("Migrazione automatica fallita")
+                    else:
+                        raise SecretSantaException("Database vuoto e nessun file JSON trovato")
+                
+                # Carica anche formato legacy per compatibilità con email manager
+                self.participants_dict = ParticipantsManager.load_from_database_legacy(
+                    self.config.database.db_path
+                )
+                logger.info(f"✅ Caricati {len(self.participants)} partecipanti dal database")
+            
+            except Exception as e:
+                logger.warning(f"Errore caricamento da database: {e}")
+                logger.info("Fallback al file JSON...")
+                self._load_from_json()
+        else:
+            self._load_from_json()
+    
+    def _load_from_json(self) -> None:
+        """Carica i partecipanti dal file JSON (metodo legacy)."""
         # Usa il metodo legacy per compatibilità con ExtractionsManager
         participants_dict = ParticipantsManager.load_from_file_legacy(self.config.participants_file)
         if not participants_dict:
@@ -60,12 +101,28 @@ class SecretSantaOrganizer:
         # Converte anche in formato Participant per le nuove funzionalità
         self.participants = ParticipantsManager.load_from_file(self.config.participants_file)
         self.participants_dict = participants_dict
-        logger.info(f"✅ Caricati {len(self.participants)} partecipanti")
+        logger.info(f"✅ Caricati {len(self.participants)} partecipanti dal JSON")
     
     def _create_assignments(self) -> Dict[str, str]:
         """Crea gli abbinamenti Secret Santa."""
         logger.info("🎲 Creazione abbinamenti...")
-        assignments = ExtractionsManager.extract(self.participants_dict, self.config.max_extraction_attempts)
+        
+        if self.config.use_database and self.extractions_manager:
+            # Usa il nuovo algoritmo con database
+            participant_names = list(self.participants.keys())
+            assignments = self.extractions_manager.extract_with_database(
+                participant_names,
+                datetime.now().year,
+                self.config.max_extraction_attempts,
+                self.config.database.years_history
+            )
+        else:
+            # Usa l'algoritmo legacy
+            assignments = ExtractionsManager.extract(
+                self.participants_dict, 
+                self.config.max_extraction_attempts
+            )
+        
         if not assignments:
             raise SecretSantaException("Impossibile creare abbinamenti validi")
         
@@ -114,10 +171,17 @@ class SecretSantaOrganizer:
 
 def main():
     """Funzione principale."""
-    print("🎅 Secret Santa Organizer 2025 🎁\n")
+    config = AppConfig()
+    
+    print("🎅 Secret Santa Organizer 2025 🎁")
+    if config.use_database:
+        print("📊 Modalità Database SQLite attivata")
+    else:
+        print("📄 Modalità file JSON")
+    print()
     
     try:
-        organizer = SecretSantaOrganizer()
+        organizer = SecretSantaOrganizer(config)
         organizer.run()
     except Exception as e:
         logger.error(f"💥 Errore imprevisto: {e}")

@@ -19,16 +19,28 @@ class SMTPConfig:
 
 
 @dataclass
+class DatabaseConfig:
+    """Configurazione database"""
+    db_path: str = "secret_santa.db"
+    migration_backup: bool = True
+    years_history: int = 3
+
+
+@dataclass
 class AppConfig:
     """Configurazione dell'applicazione"""
     participants_file: str = "participants.json"
     env_file: str = ".env"
     max_extraction_attempts: int = 1000
+    use_database: bool = True
     smtp: SMTPConfig = None
+    database: DatabaseConfig = None
     
     def __post_init__(self):
         if self.smtp is None:
             self.smtp = SMTPConfig()
+        if self.database is None:
+            self.database = DatabaseConfig()
 
 
 def load_env_variables() -> Dict[str, str]:
